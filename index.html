@@ -196,7 +196,7 @@
             "Segoe UI",
           ];
           allFonts.push(...systemFonts, ...json.items.map((f) => f.family));
-          output.innerText = `✅ Đã tải ${allFonts.length} fonts`;
+          // output.innerText = `✅ Đã tải ${allFonts.length} fonts`;
           filterFonts();
         } catch (err) {
           output.innerText = `❌ Lỗi tải font: ${err.message}`;

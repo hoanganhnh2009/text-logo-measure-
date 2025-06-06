@@ -394,15 +394,22 @@
 
         ctx.restore();
 
+        // output.innerHTML =
+        //   `🖋 Font: ${
+        //     usingUploaded ? "Font tải lên" : selectedFont || "Arial"
+        //   }<br>` +
+        //   `📏 Chữ: ${widthCm.toFixed(2)} cm` +
+        //   (logoWidthCm > 0 ? `<br>🖼️ Logo: ${logoWidthCm.toFixed(2)} cm` : "") +
+        //   `<br><b style="font-size:16px;color:#d91e18;">📐 Tổng: ${totalCm.toFixed(
+        //     2
+        //   )} cm</b>`;
         output.innerHTML =
           `🖋 Font: ${
             usingUploaded ? "Font tải lên" : selectedFont || "Arial"
           }<br>` +
           `📏 Chữ: ${widthCm.toFixed(2)} cm` +
           (logoWidthCm > 0 ? `<br>🖼️ Logo: ${logoWidthCm.toFixed(2)} cm` : "") +
-          `<br><b style="font-size:16px;color:#d91e18;">📐 Tổng: ${totalCm.toFixed(
-            2
-          )} cm</b>`;
+          `<br><b style="font-size:16px;color:#d91e18;">`;
 
         updatePrintCost(totalCm);
       }

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <title>Đo chiều rộng chữ + logo</title>
+    <title>Đo chiều rộng chữ + logo kiểu AutoCAD</title>
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
@@ -35,7 +35,7 @@
         margin-top: 15px;
         border: 1px dashed #ccc;
         width: 100%;
-        height: 60px;
+        height: 100px;
         background: #fff;
       }
       #output {
@@ -90,11 +90,13 @@
       #logoPreview img {
         margin-top: 10px;
         display: block;
+        max-height: 100px;
+        object-fit: contain;
       }
     </style>
   </head>
   <body>
-    <h2>🅰️ Đo chiều rộng chữ + logo</h2>
+    <h2>🅰️ Đo chiều rộng chữ + logo kiểu AutoCAD</h2>
 
     <input id="text" placeholder="Nhập chữ cần đo" value="" />
     <input
@@ -140,7 +142,9 @@
       const allFonts = [];
       let uploadedFontName = "";
       let logoWidthCm = 0;
-      const pxPerCm = 96 / 2.54;
+      const pxPerInch = 96; // standard screen dpi
+      const cmPerInch = 2.54;
+      const pxPerCm = pxPerInch / cmPerInch; // ~37.79527559 px/cm
 
       const fontList = document.getElementById("fontList");
       const output = document.getElementById("output");
@@ -285,93 +289,119 @@
         measure();
       });
 
-     function measure() {
-  const text = textInput.value.trim();
-  const cm = parseFloat(heightInput.value);
-  const selectedFont = fontList.value;
-  const usingUploaded = !!uploadedFontName;
-  const font = usingUploaded ? uploadedFontName : selectedFont || "Arial";
+      function measure() {
+        const text = textInput.value.trim();
+        const cm = parseFloat(heightInput.value);
+        const selectedFont = fontList.value;
+        const usingUploaded = !!uploadedFontName;
+        const font = usingUploaded ? uploadedFontName : selectedFont || "Arial";
 
-  if (!text || !cm || cm <= 0) {
-    output.innerText = "❗ Vui lòng nhập chữ và chiều cao hợp lệ.";
-    clearCanvas();
-    return;
-  }
+        if (!text || !cm || cm <= 0) {
+          output.innerText = "❗ Vui lòng nhập chữ và chiều cao hợp lệ.";
+          clearCanvas();
+          return;
+        }
 
-  if (!usingUploaded && selectedFont) {
-    loadGoogleFont(selectedFont);
-  }
+        if (!usingUploaded && selectedFont) {
+          loadGoogleFont(selectedFont);
+        }
 
-  const pt = cm * 28.35;
-  const canvas = document.getElementById("canvas");
-  const ctx = canvas.getContext("2d");
-  const pxFontHeight = cm * pxPerCm;
+        // Chuyển cm sang điểm (pt): 1 pt = 1/72 inch; 1 inch = 2.54 cm
+        // pt = cm / 2.54 * 72 = cm * 28.3464567
+        const pt = cm * 28.3464567;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.font = `${pt}pt '${font}'`;
-  ctx.fillStyle = "#000";
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const pxFontHeight = cm * pxPerCm;
 
-  const textX = 10;
-  const textY = pxFontHeight;
-  ctx.fillText(text, textX, textY);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const textWidth = ctx.measureText(text).width;
-  const widthCm = textWidth / pxPerCm;
-  const textBottom = textY + 5;
-  const textHeight = pxFontHeight;
+        ctx.textBaseline = "alphabetic";
+        ctx.font = `${pt}pt '${font}'`;
+        ctx.fillStyle = "#000";
 
-  // Vẽ khung chữ
-  ctx.strokeStyle = "#4a90e2";
-  ctx.lineWidth = 1;
-  ctx.strokeRect(textX, textY - textHeight, textWidth, textHeight);
+        const textX = 10;
+        const textY = pxFontHeight;
 
-  // Gạch kích thước chữ
-  ctx.beginPath();
-  ctx.moveTo(textX, textBottom);
-  ctx.lineTo(textX + textWidth, textBottom);
-  ctx.stroke();
+        ctx.fillText(text, textX, textY);
 
-  ctx.fillStyle = "#4a90e2";
-  ctx.fillText(`${widthCm.toFixed(2)} cm`, textX + textWidth / 2 - 20, textBottom + 15);
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+        const widthCm = textWidth / pxPerCm;
+        const textHeight = pxFontHeight;
+        const textBottom = textY + 5;
 
-  let totalCm = widthCm;
+        // Vẽ khung chữ
+        ctx.strokeStyle = "#4a90e2";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(textX, textY - textHeight, textWidth, textHeight);
 
-  // Nếu có logo
-  if (logoWidthCm > 0) {
-    const logoStartX = textX + textWidth + 10;
-    const logoWidthPx = logoWidthCm * pxPerCm;
-    const logoHeight = pxFontHeight;
+        // Gạch kích thước chữ
+        ctx.beginPath();
+        ctx.moveTo(textX, textBottom);
+        ctx.lineTo(textX + textWidth, textBottom);
+        ctx.stroke();
 
-    ctx.strokeStyle = "#d35400";
-    ctx.strokeRect(logoStartX, textY - logoHeight, logoWidthPx, logoHeight);
+        ctx.fillStyle = "#4a90e2";
+        ctx.font = `normal 14px sans-serif`;
+        ctx.fillText(
+          `${widthCm.toFixed(2)} cm`,
+          textX + textWidth / 2 - 30,
+          textBottom + 15
+        );
 
-    ctx.beginPath();
-    ctx.moveTo(logoStartX, textBottom);
-    ctx.lineTo(logoStartX + logoWidthPx, textBottom);
-    ctx.stroke();
+        let totalCm = widthCm;
 
-    ctx.fillStyle = "#d35400";
-    ctx.fillText(`${logoWidthCm.toFixed(2)} cm`, logoStartX + logoWidthPx / 2 - 20, textBottom + 15);
+        // Nếu có logo
+        if (logoWidthCm > 0) {
+          const logoStartX = textX + textWidth + 10;
+          const logoWidthPx = logoWidthCm * pxPerCm;
+          const logoHeight = pxFontHeight;
 
-    totalCm += logoWidthCm;
-  }
+          ctx.strokeStyle = "#d35400";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            logoStartX,
+            textY - logoHeight,
+            logoWidthPx,
+            logoHeight
+          );
 
-  // Ghi tổng
-  ctx.fillStyle = "#c0392b";
-  ctx.font = `bold ${14}px sans-serif`;
-  ctx.fillText(`📐 Tổng: ${totalCm.toFixed(2)} cm`, textX, textBottom + 40);
+          ctx.beginPath();
+          ctx.moveTo(logoStartX, textBottom);
+          ctx.lineTo(logoStartX + logoWidthPx, textBottom);
+          ctx.stroke();
 
-  // Ghi lại thông tin ở output
-  output.innerHTML =
-    `🖋 Font: ${
-      usingUploaded ? "Font tải lên" : selectedFont || "Arial"
-    }<br>` +
-    `📏 Chữ: ${widthCm.toFixed(2)} cm` +
-    (logoWidthCm > 0 ? `<br>🖼️ Logo: ${logoWidthCm.toFixed(2)} cm` : "") +
-    `<br><b style="font-size:16px;color:#d91e18;">📐 Tổng: ${totalCm.toFixed(
-      2
-    )} cm</b>`;
-}
+          ctx.fillStyle = "#d35400";
+          ctx.fillText(
+            `${logoWidthCm.toFixed(2)} cm`,
+            logoStartX + logoWidthPx / 2 - 30,
+            textBottom + 15
+          );
+
+          totalCm += logoWidthCm;
+        }
+
+        // Ghi tổng chiều rộng
+        ctx.fillStyle = "#c0392b";
+        ctx.font = `bold 16px sans-serif`;
+        ctx.fillText(
+          `📐 Tổng: ${totalCm.toFixed(2)} cm`,
+          textX,
+          textBottom + 40
+        );
+
+        // Xuất kết quả ra text
+        output.innerHTML =
+          `🖋 Font: ${
+            usingUploaded ? "Font tải lên" : selectedFont || "Arial"
+          }<br>` +
+          `📏 Chữ: ${widthCm.toFixed(2)} cm` +
+          (logoWidthCm > 0 ? `<br>🖼️ Logo: ${logoWidthCm.toFixed(2)} cm` : "") +
+          `<br><b style="font-size:16px;color:#d91e18;">📐 Tổng: ${totalCm.toFixed(
+            2
+          )} cm</b>`;
+      }
 
       function isFontAvailable(font) {
         const canvas = document.createElement("canvas");

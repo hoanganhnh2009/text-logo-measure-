@@ -1,3 +1,4 @@
+<!-- CHỈ CẦN COPY TOÀN BỘ FILE NÀY -->
 <!DOCTYPE html>
 <html lang="vi">
   <head>
@@ -98,7 +99,7 @@
   <body>
     <h2>🅰️ Đo chiều rộng chữ + logo</h2>
 
-    <input id="text" placeholder="Nhập chữ cần đo" value="" />
+    <input id="text" placeholder="Nhập chữ cần đo" value="Lê Viết Hoè" />
     <input
       id="height"
       type="number"
@@ -138,20 +139,41 @@
     <div id="output"></div>
     <div id="logoPreview"></div>
 
+    <hr style="margin: 30px 0" />
+    <div class="row" style="align-items: flex-start">
+      <div style="flex: 1">
+        <label>Số lần in / dây</label>
+        <input type="number" id="printsPerCable" value="1" min="1" />
+      </div>
+      <div style="flex: 1">
+        <label>Số dây cần in</label>
+        <input type="number" id="numberOfCables" value="1" min="1" />
+      </div>
+      <div style="flex: 1">
+        <label>Chi phí cố định</label>
+        <input value="200,000 đ" disabled />
+      </div>
+    </div>
+
+    <div id="priceOutput" style="margin-top: 12px; font-weight: bold"></div>
+
     <script>
       const API_KEY = "AIzaSyArOSMGtMYlBfaI9EcLd9WvT21zYTAaYfU";
       const allFonts = [];
       let uploadedFontName = "";
       let logoWidthCm = 0;
-      const pxPerInch = 96; // standard screen dpi
+      const pxPerInch = 96;
       const cmPerInch = 2.54;
-      const pxPerCm = pxPerInch / cmPerInch; // ~37.79527559 px/cm
+      const pxPerCm = pxPerInch / cmPerInch;
 
       const fontList = document.getElementById("fontList");
       const output = document.getElementById("output");
       const fontSearch = document.getElementById("fontSearch");
       const textInput = document.getElementById("text");
       const heightInput = document.getElementById("height");
+      const printsPerCableInput = document.getElementById("printsPerCable");
+      const numberOfCablesInput = document.getElementById("numberOfCables");
+      const priceOutput = document.getElementById("priceOutput");
 
       async function fetchFonts() {
         try {
@@ -204,20 +226,8 @@
         measure();
         resizeLogo();
       });
-
-      function loadGoogleFont(font) {
-        const fontName = font.replace(/ /g, "+");
-        if (
-          ![...document.head.querySelectorAll("link")].some((link) =>
-            link.href.includes(`family=${fontName}`)
-          )
-        ) {
-          const link = document.createElement("link");
-          link.href = `https://fonts.googleapis.com/css2?family=${fontName}&display=swap`;
-          link.rel = "stylesheet";
-          document.head.appendChild(link);
-        }
-      }
+      printsPerCableInput.addEventListener("input", measure);
+      numberOfCablesInput.addEventListener("input", measure);
 
       document
         .getElementById("fontFile")
@@ -243,14 +253,12 @@
           reader.readAsArrayBuffer(file);
         });
 
-      document
-        .getElementById("clearFont")
-        .addEventListener("click", function () {
-          uploadedFontName = "";
-          document.getElementById("fontFile").value = "";
-          output.innerText = "🧹 Đã xóa font upload.";
-          measure();
-        });
+      document.getElementById("clearFont").addEventListener("click", () => {
+        uploadedFontName = "";
+        document.getElementById("fontFile").value = "";
+        output.innerText = "🧹 Đã xóa font upload.";
+        measure();
+      });
 
       document
         .getElementById("logoFile")
@@ -307,27 +315,21 @@
           loadGoogleFont(selectedFont);
         }
 
-        // Chuyển cm sang điểm (pt): 1 pt = 1/72 inch; 1 inch = 2.54 cm
-        // pt = cm / 2.54 * 72 = cm * 28.3464567
         const pt = cm * 28.3464567;
-
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         const pxFontHeight = cm * pxPerCm;
 
-        const scale = 0.7; // tỉ lệ giảm, sếp chỉnh tuỳ ý
-
+        const scale = 0.7;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.scale(scale, scale);
-
         ctx.textBaseline = "alphabetic";
         ctx.font = `${pt}pt '${font}'`;
         ctx.fillStyle = "#000";
 
         const textX = 10;
         const textY = pxFontHeight;
-
         ctx.fillText(text, textX, textY);
 
         const textMetrics = ctx.measureText(text);
@@ -336,17 +338,13 @@
         const textHeight = pxFontHeight;
         const textBottom = textY + 5;
 
-        // Vẽ khung chữ
         ctx.strokeStyle = "#4a90e2";
         ctx.lineWidth = 1;
         ctx.strokeRect(textX, textY - textHeight, textWidth, textHeight);
-
-        // Gạch kích thước chữ
         ctx.beginPath();
         ctx.moveTo(textX, textBottom);
         ctx.lineTo(textX + textWidth, textBottom);
         ctx.stroke();
-
         ctx.fillStyle = "#4a90e2";
         ctx.font = `normal 14px sans-serif`;
         ctx.fillText(
@@ -357,9 +355,8 @@
 
         let totalCm = widthCm;
 
-        // Nếu có logo
         if (logoWidthCm > 0) {
-          const logoStartX = textX + textWidth + 10; //+ Thêm spacing
+          const logoStartX = textX + textWidth + 10;
           const logoWidthPx = logoWidthCm * pxPerCm;
           const logoHeight = pxFontHeight;
 
@@ -387,7 +384,6 @@
           totalCm += logoWidthCm;
         }
 
-        // Ghi tổng chiều rộng
         ctx.fillStyle = "#c0392b";
         ctx.font = `bold 16px sans-serif`;
         ctx.fillText(
@@ -396,9 +392,8 @@
           textBottom + 40
         );
 
-        ctx.restore(); // phục hồi trạng thái scale
+        ctx.restore();
 
-        // Xuất kết quả ra text (giữ nguyên)
         output.innerHTML =
           `🖋 Font: ${
             usingUploaded ? "Font tải lên" : selectedFont || "Arial"
@@ -408,20 +403,24 @@
           `<br><b style="font-size:16px;color:#d91e18;">📐 Tổng: ${totalCm.toFixed(
             2
           )} cm</b>`;
+
+        updatePrintCost(totalCm);
       }
 
-      function isFontAvailable(font) {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        const text = "abcdefghijklmnopqrstuvwxyz0123456789";
+      function updatePrintCost(totalCm) {
+        const priceFix = 200000;
+        const printsPerCable = parseInt(printsPerCableInput.value) || 0;
+        const numberOfCables = parseInt(numberOfCablesInput.value) || 0;
+        const price = totalCm > 30 ? 10000 : 5000;
+        const total = printsPerCable * numberOfCables * price + priceFix;
 
-        ctx.font = "16px monospace";
-        const baselineSize = ctx.measureText(text).width;
-
-        ctx.font = `16px '${font}', monospace`;
-        const testSize = ctx.measureText(text).width;
-
-        return testSize !== baselineSize;
+        priceOutput.innerHTML = `
+          💸 Giá in: ${price.toLocaleString()}đ<br>
+          🔁 Tổng in: ${printsPerCable} x ${numberOfCables} = <b>${
+          printsPerCable * numberOfCables
+        }</b><br>
+          🧾 <b style="color: green;">Tổng tiền  (= Số lần in / dây x số dây cần in + chi phí cố định):\r ${total.toLocaleString()}đ</b>
+        `;
       }
 
       function resizeLogo() {
@@ -435,6 +434,20 @@
         logo.style.width = `${targetWidthPx}px`;
         logoWidthCm = targetWidthPx / pxPerCm;
         measure();
+      }
+
+      function loadGoogleFont(font) {
+        const fontName = font.replace(/ /g, "+");
+        if (
+          ![...document.head.querySelectorAll("link")].some((link) =>
+            link.href.includes(`family=${fontName}`)
+          )
+        ) {
+          const link = document.createElement("link");
+          link.href = `https://fonts.googleapis.com/css2?family=${fontName}&display=swap`;
+          link.rel = "stylesheet";
+          document.head.appendChild(link);
+        }
       }
 
       function clearCanvas() {

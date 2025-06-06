@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Đo chiều rộng chữ + logo</title>
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        padding: 20px;
+        max-width: 800px;
+        margin: auto;
+        background: #f8f9fa;
+        color: #333;
+      }
+      input,
+      select,
+      button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        font-size: 14px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+      }
+      select {
+        height: 120px;
+      }
+      canvas {
+        margin-top: 15px;
+        border: 1px dashed #ccc;
+        width: 100%;
+        height: 60px;
+        background: #fff;
+      }
+      #output {
+        margin-top: 12px;
+        font-size: 14px;
+        white-space: pre-wrap;
+      }
+      label {
+        display: block;
+        margin-top: 15px;
+        font-weight: 600;
+        color: #444;
+      }
+      h2 {
+        font-size: 20px;
+        margin-bottom: 20px;
+        color: #1a1a1a;
+      }
+      button {
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+        background: #f0f0f0;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 5px;
+      }
+      .row input[type="file"] {
+        flex: 1;
+      }
+      .row button {
+        padding: 6px 12px;
+        font-size: 14px;
+        flex-shrink: 0;
+        width: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: #e7e7e7;
+        border-radius: 6px;
+        color: #444;
+      }
+      .row button:hover {
+        background: #dcdcdc;
+      }
+      .material-icons {
+        font-size: 18px;
+      }
+      #logoPreview img {
+        margin-top: 10px;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>🅰️ Đo chiều rộng chữ + logo</h2>
+
+    <input id="text" placeholder="Nhập chữ cần đo" value="" />
+    <input
+      id="height"
+      type="number"
+      step="0.1"
+      placeholder="Chiều cao (cm)"
+      value=""
+    />
+
+    <label>🔤 Font (Google & tùy chỉnh)</label>
+    <div class="row" style="align-items: stretch">
+      <div style="flex: 2; display: flex; flex-direction: column; gap: 5px">
+        <input
+          id="fontSearch"
+          placeholder="Tìm font Google..."
+          autocomplete="off"
+        />
+        <select id="fontList" size="6"></select>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 5px">
+        <input type="file" id="fontFile" accept=".ttf,.otf" />
+        <button id="clearFont" title="Xóa font">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+    </div>
+
+    <label>🖼️ Logo (ảnh PNG/JPG/SVG)</label>
+    <div class="row">
+      <input type="file" id="logoFile" accept="image/*" />
+      <button id="clearLogo" title="Xóa logo">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <canvas id="canvas" width="600" height="100"></canvas>
+    <div id="output"></div>
+    <div id="logoPreview"></div>
+
+    <script>
+      const API_KEY = "AIzaSyArOSMGtMYlBfaI9EcLd9WvT21zYTAaYfU";
+      const allFonts = [];
+      let uploadedFontName = "";
+      let logoWidthCm = 0;
+      const pxPerCm = 96 / 2.54;
+
+      const fontList = document.getElementById("fontList");
+      const output = document.getElementById("output");
+      const fontSearch = document.getElementById("fontSearch");
+      const textInput = document.getElementById("text");
+      const heightInput = document.getElementById("height");
+
+      async function fetchFonts() {
+        try {
+          output.innerText = "🔄 Đang tải danh sách font...";
+          const res = await fetch(
+            `https://www.googleapis.com/webfonts/v1/webfonts?key=${API_KEY}`
+          );
+          const json = await res.json();
+          const systemFonts = [
+            "Arial",
+            "Arial Black",
+            "Times New Roman",
+            "Helvetica",
+            "Tahoma",
+            "Verdana",
+            "Calibri",
+            "Georgia",
+            "Impact",
+            "Franklin Gothic",
+            "Segoe UI",
+          ];
+          allFonts.push(...systemFonts, ...json.items.map((f) => f.family));
+          output.innerText = `✅ Đã tải ${allFonts.length} fonts`;
+          filterFonts();
+        } catch (err) {
+          output.innerText = `❌ Lỗi tải font: ${err.message}`;
+        }
+      }
+
+      function filterFonts() {
+        const query = fontSearch.value.toLowerCase();
+        fontList.innerHTML = "";
+        const found = allFonts
+          .filter((f) => f.toLowerCase().includes(query))
+          .slice(0, 50);
+        found.forEach((font) => {
+          const opt = document.createElement("option");
+          opt.textContent = font;
+          fontList.appendChild(opt);
+        });
+      }
+
+      fontList.addEventListener("change", () => {
+        fontSearch.value = fontList.value;
+        measure();
+      });
+      fontSearch.addEventListener("input", filterFonts);
+      textInput.addEventListener("input", measure);
+      heightInput.addEventListener("input", () => {
+        measure();
+        resizeLogo();
+      });
+
+      function loadGoogleFont(font) {
+        const fontName = font.replace(/ /g, "+");
+        if (
+          ![...document.head.querySelectorAll("link")].some((link) =>
+            link.href.includes(`family=${fontName}`)
+          )
+        ) {
+          const link = document.createElement("link");
+          link.href = `https://fonts.googleapis.com/css2?family=${fontName}&display=swap`;
+          link.rel = "stylesheet";
+          document.head.appendChild(link);
+        }
+      }
+
+      document
+        .getElementById("fontFile")
+        .addEventListener("change", function (e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function () {
+            const fontData = reader.result;
+            const font = new FontFace("UploadedFont", fontData);
+            font
+              .load()
+              .then(function (loadedFace) {
+                document.fonts.add(loadedFace);
+                uploadedFontName = "UploadedFont";
+                output.innerText = `✅ Font "${file.name}" đã tải lên.`;
+                measure();
+              })
+              .catch(function (err) {
+                output.innerText = `❌ Lỗi tải font: ${err}`;
+              });
+          };
+          reader.readAsArrayBuffer(file);
+        });
+
+      document
+        .getElementById("clearFont")
+        .addEventListener("click", function () {
+          uploadedFontName = "";
+          document.getElementById("fontFile").value = "";
+          output.innerText = "🧹 Đã xóa font upload.";
+          measure();
+        });
+
+      document
+        .getElementById("logoFile")
+        .addEventListener("change", function (e) {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = function () {
+            const img = new Image();
+            img.onload = function () {
+              const cm = parseFloat(heightInput.value) || 2;
+              const targetHeightPx = cm * pxPerCm;
+              const ratio = img.width / img.height;
+              const targetWidthPx = targetHeightPx * ratio;
+              logoWidthCm = targetWidthPx / pxPerCm;
+
+              img.style.height = `${targetHeightPx}px`;
+              img.style.width = `${targetWidthPx}px`;
+              img.style.objectFit = "contain";
+
+              const preview = document.getElementById("logoPreview");
+              preview.innerHTML = "";
+              preview.appendChild(img);
+
+              measure();
+            };
+            img.src = reader.result;
+          };
+          reader.readAsDataURL(file);
+        });
+
+      document.getElementById("clearLogo").addEventListener("click", () => {
+        document.getElementById("logoFile").value = "";
+        document.getElementById("logoPreview").innerHTML = "";
+        logoWidthCm = 0;
+        measure();
+      });
+
+     function measure() {
+  const text = textInput.value.trim();
+  const cm = parseFloat(heightInput.value);
+  const selectedFont = fontList.value;
+  const usingUploaded = !!uploadedFontName;
+  const font = usingUploaded ? uploadedFontName : selectedFont || "Arial";
+
+  if (!text || !cm || cm <= 0) {
+    output.innerText = "❗ Vui lòng nhập chữ và chiều cao hợp lệ.";
+    clearCanvas();
+    return;
+  }
+
+  if (!usingUploaded && selectedFont) {
+    loadGoogleFont(selectedFont);
+  }
+
+  const pt = cm * 28.35;
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const pxFontHeight = cm * pxPerCm;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = `${pt}pt '${font}'`;
+  ctx.fillStyle = "#000";
+
+  const textX = 10;
+  const textY = pxFontHeight;
+  ctx.fillText(text, textX, textY);
+
+  const textWidth = ctx.measureText(text).width;
+  const widthCm = textWidth / pxPerCm;
+  const textBottom = textY + 5;
+  const textHeight = pxFontHeight;
+
+  // Vẽ khung chữ
+  ctx.strokeStyle = "#4a90e2";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(textX, textY - textHeight, textWidth, textHeight);
+
+  // Gạch kích thước chữ
+  ctx.beginPath();
+  ctx.moveTo(textX, textBottom);
+  ctx.lineTo(textX + textWidth, textBottom);
+  ctx.stroke();
+
+  ctx.fillStyle = "#4a90e2";
+  ctx.fillText(`${widthCm.toFixed(2)} cm`, textX + textWidth / 2 - 20, textBottom + 15);
+
+  let totalCm = widthCm;
+
+  // Nếu có logo
+  if (logoWidthCm > 0) {
+    const logoStartX = textX + textWidth + 10;
+    const logoWidthPx = logoWidthCm * pxPerCm;
+    const logoHeight = pxFontHeight;
+
+    ctx.strokeStyle = "#d35400";
+    ctx.strokeRect(logoStartX, textY - logoHeight, logoWidthPx, logoHeight);
+
+    ctx.beginPath();
+    ctx.moveTo(logoStartX, textBottom);
+    ctx.lineTo(logoStartX + logoWidthPx, textBottom);
+    ctx.stroke();
+
+    ctx.fillStyle = "#d35400";
+    ctx.fillText(`${logoWidthCm.toFixed(2)} cm`, logoStartX + logoWidthPx / 2 - 20, textBottom + 15);
+
+    totalCm += logoWidthCm;
+  }
+
+  // Ghi tổng
+  ctx.fillStyle = "#c0392b";
+  ctx.font = `bold ${14}px sans-serif`;
+  ctx.fillText(`📐 Tổng: ${totalCm.toFixed(2)} cm`, textX, textBottom + 40);
+
+  // Ghi lại thông tin ở output
+  output.innerHTML =
+    `🖋 Font: ${
+      usingUploaded ? "Font tải lên" : selectedFont || "Arial"
+    }<br>` +
+    `📏 Chữ: ${widthCm.toFixed(2)} cm` +
+    (logoWidthCm > 0 ? `<br>🖼️ Logo: ${logoWidthCm.toFixed(2)} cm` : "") +
+    `<br><b style="font-size:16px;color:#d91e18;">📐 Tổng: ${totalCm.toFixed(
+      2
+    )} cm</b>`;
+}
+
+      function isFontAvailable(font) {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const text = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+        ctx.font = "16px monospace";
+        const baselineSize = ctx.measureText(text).width;
+
+        ctx.font = `16px '${font}', monospace`;
+        const testSize = ctx.measureText(text).width;
+
+        return testSize !== baselineSize;
+      }
+
+      function resizeLogo() {
+        const logo = document.querySelector("#logoPreview img");
+        if (!logo) return;
+        const cm = parseFloat(heightInput.value) || 2;
+        const targetHeightPx = cm * pxPerCm;
+        const ratio = logo.naturalWidth / logo.naturalHeight;
+        const targetWidthPx = targetHeightPx * ratio;
+        logo.style.height = `${targetHeightPx}px`;
+        logo.style.width = `${targetWidthPx}px`;
+        logoWidthCm = targetWidthPx / pxPerCm;
+        measure();
+      }
+
+      function clearCanvas() {
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      window.onload = function () {
+        fetchFonts();
+        measure();
+      };
+    </script>
+  </body>
+</html>

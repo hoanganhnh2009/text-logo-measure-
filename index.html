@@ -12,7 +12,7 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Helvetica, Arial, sans-serif;
         padding: 20px;
-        max-width: 800px;
+        max-width: 1000px;
         margin: auto;
         background: #f8f9fa;
         color: #333;
@@ -35,7 +35,7 @@
         margin-top: 15px;
         border: 1px dashed #ccc;
         width: 100%;
-        height: 100px;
+        height: 150px;
         background: #fff;
       }
       #output {
@@ -104,7 +104,8 @@
       type="number"
       step="0.1"
       placeholder="Chiều cao (cm)"
-      value=""
+      value="3"
+      max="5"
     />
 
     <label>🔤 Font (Google & tùy chỉnh)</label>
@@ -133,7 +134,7 @@
       </button>
     </div>
 
-    <canvas id="canvas" width="600" height="100"></canvas>
+    <canvas id="canvas" width="800" height="150"></canvas>
     <div id="output"></div>
     <div id="logoPreview"></div>
 
@@ -314,7 +315,11 @@
         const ctx = canvas.getContext("2d");
         const pxFontHeight = cm * pxPerCm;
 
+        const scale = 0.7; // tỉ lệ giảm, sếp chỉnh tuỳ ý
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.scale(scale, scale);
 
         ctx.textBaseline = "alphabetic";
         ctx.font = `${pt}pt '${font}'`;
@@ -354,7 +359,7 @@
 
         // Nếu có logo
         if (logoWidthCm > 0) {
-          const logoStartX = textX + textWidth + 10;
+          const logoStartX = textX + textWidth + 10; //+ Thêm spacing
           const logoWidthPx = logoWidthCm * pxPerCm;
           const logoHeight = pxFontHeight;
 
@@ -391,7 +396,9 @@
           textBottom + 40
         );
 
-        // Xuất kết quả ra text
+        ctx.restore(); // phục hồi trạng thái scale
+
+        // Xuất kết quả ra text (giữ nguyên)
         output.innerHTML =
           `🖋 Font: ${
             usingUploaded ? "Font tải lên" : selectedFont || "Arial"

@@ -165,15 +165,20 @@
       </div>
     </div> -->
 
-   <div class="row" style="align-items: center; gap: 12px">
-  <label for="cableLength" style="font-weight: bold; white-space: nowrap;">📏 Loại dây</label>
-  <select id="cableLength" style="width: auto">
-    <option value="2">2 mét</option>
-    <option value="3" selected>3 mét</option>
-    <option value="5">5 mét</option>
-  </select>
-</div>
-<div id="spacingOptions" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px"></div>
+    <div class="row" style="align-items: center; gap: 12px">
+      <label for="cableLength" style="font-weight: bold; white-space: nowrap"
+        >📏 Loại dây</label
+      >
+      <select id="cableLength" style="width: auto">
+        <option value="2">2 mét</option>
+        <option value="3" selected>3 mét</option>
+        <option value="5">5 mét</option>
+      </select>
+    </div>
+    <div
+      id="spacingOptions"
+      style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px"
+    ></div>
     <div class="row" style="align-items: flex-start">
       <div style="flex: 1">
         <label>Số lần in / dây</label>
@@ -472,15 +477,16 @@
           100; // cm
         let min = minCount > 0 ? minCount - 1 : minCount;
         let max = maxCount > 0 ? maxCount + 1 : maxCount;
+        console.log("min", min, max);
         const spacingOptions = Array.from(
-          { length: max - minCount + 1 },
-          (_, i) => i + minCount
+          { length: max - min + 1 },
+          (_, i) => i + min
         )
           .map((count) => {
             const space =
               ((usableLength - count * totalCmEach) / (count - 1 || 1)) * 100;
             // Khoảng cách min 20cm, max 40cm
-            if (space < 15 || space > 65) return null;
+            if (space < 15 || space > 70) return null;
             return `<div class="spacing-suggestion" data-count="${count}" title="Bấm để chọn"
         style="
           cursor: pointer;

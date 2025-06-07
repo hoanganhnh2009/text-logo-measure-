@@ -339,7 +339,6 @@
 
       function measure() {
         const text = textInput.value.trim();
-        // 1
         const cm = parseFloat(heightInput.value);
         const selectedFont = fontList.value;
         const usingUploaded = !!uploadedFontName;
@@ -363,6 +362,7 @@
         const scale = 0.7;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
+
         ctx.scale(scale, scale);
         ctx.textBaseline = "alphabetic";
         ctx.font = `${pt}pt '${font}'`;
@@ -370,6 +370,8 @@
 
         const textX = 10;
         const textY = pxFontHeight;
+        //
+
         ctx.fillText(text, textX, textY);
 
         const textMetrics = ctx.measureText(text);
@@ -431,7 +433,6 @@
           textX,
           textBottom + 40
         );
-
         ctx.restore();
 
         // output.innerHTML =
@@ -466,6 +467,7 @@
         const spacing =
           ((usableLength - autoCount * totalCmEach) / (autoCount - 1 || 1)) *
           100; // cm
+        let min = minCount > 0 ? minCount - 1 : minCount;
         let max = maxCount > 0 ? maxCount + 1 : maxCount;
         const spacingOptions = Array.from(
           { length: max - minCount + 1 },

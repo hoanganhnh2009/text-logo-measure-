@@ -1,4 +1,3 @@
-<!-- CHỈ CẦN COPY TOÀN BỘ FILE NÀY -->
 <!DOCTYPE html>
 <html lang="vi">
   <head>
@@ -37,7 +36,7 @@
         border: 1px dashed #ccc;
         width: 100%;
         height: 150px;
-        background: #fff;
+        background: linear-gradient(#eee 2.5cm, #fff 2.5cm);
       }
       #output {
         margin-top: 12px;
@@ -64,7 +63,7 @@
         display: flex;
         gap: 10px;
         align-items: center;
-        margin-top: 5px;
+        margin-top: 10px;
       }
       .row input[type="file"] {
         flex: 1;
@@ -94,20 +93,30 @@
         max-height: 100px;
         object-fit: contain;
       }
+      #cableLength {
+        height: auto !important;
+        padding: 6px 10px;
+      }
     </style>
   </head>
   <body>
     <h2>🅰️ Đo chiều rộng chữ + logo</h2>
 
-    <input id="text" placeholder="Nhập chữ cần đo" value="Lê Viết Hoè" />
-    <input
-      id="height"
-      type="number"
-      step="0.1"
-      placeholder="Chiều cao (cm)"
-      value="3"
-      max="5"
-    />
+    <div class="row">
+      <div style="flex: 2">
+        <input id="text" placeholder="Nhập chữ cần đo" value="Lê Viết Hoè" />
+      </div>
+      <div style="flex: 1">
+        <input
+          id="height"
+          type="number"
+          step="0.1"
+          placeholder="Chiều cao (cm)"
+          value="3"
+          max="5"
+        />
+      </div>
+    </div>
 
     <label>🔤 Font (Google & tùy chỉnh)</label>
     <div class="row" style="align-items: stretch">
@@ -138,8 +147,35 @@
     <canvas id="canvas" width="800" height="150"></canvas>
     <div id="output"></div>
     <div id="logoPreview"></div>
-
-    <hr style="margin: 30px 0" />
+    <!-- <div class="row">
+      <div style="flex: 1">
+        <label>📏 Loại dây</label>
+        <select id="cableLength">
+          <option value="2">2 mét</option>
+          <option value="3" selected>3 mét</option>
+          <option value="5">5 mét</option>
+        </select>
+      </div>
+      <div style="flex: 2">
+        <div id="cableSuggest" style="padding-top: 8px; font-weight: 600"></div>
+        <div
+          id="spacingOptions"
+          style="color: #333; font-size: 13px; margin-top: 10px"
+        ></div>
+      </div>
+    </div> -->
+    <div class="row" style="align-items: center; flex-wrap: wrap; gap: 12px">
+      <label for="cableLength" style="font-weight: bold">📏 Loại dây</label>
+      <select id="cableLength">
+        <option value="2">2 mét</option>
+        <option value="3" selected>3 mét</option>
+        <option value="5">5 mét</option>
+      </select>
+      <div
+        id="spacingOptions"
+        style="flex: 1; display: flex; flex-wrap: wrap; gap: 10px"
+      ></div>
+    </div>
     <div class="row" style="align-items: flex-start">
       <div style="flex: 1">
         <label>Số lần in / dây</label>
@@ -259,6 +295,9 @@
         output.innerText = "🧹 Đã xóa font upload.";
         measure();
       });
+      document
+        .getElementById("cableLength")
+        .addEventListener("change", measure);
 
       document
         .getElementById("logoFile")
@@ -300,6 +339,7 @@
 
       function measure() {
         const text = textInput.value.trim();
+        // 1
         const cm = parseFloat(heightInput.value);
         const selectedFont = fontList.value;
         const usingUploaded = !!uploadedFontName;
@@ -403,6 +443,76 @@
         //   `<br><b style="font-size:16px;color:#d91e18;">📐 Tổng: ${totalCm.toFixed(
         //     2
         //   )} cm</b>`;
+        const cableLength = parseFloat(
+          document.getElementById("cableLength").value
+        ); // mét
+        // Khoảng cách cố định mỗi đầu 20cm x 2  = 0.4m
+        const reservedEnds = 0.4;
+        const usableLength = cableLength - reservedEnds;
+
+        const minSpacing = 20 / 100; // mét
+        const maxSpacing = 30 / 100;
+        const totalCmEach = totalCm / 100; // mét cho 1 lần in (gồm chữ + logo)
+
+        let minCount = Math.floor(usableLength / (totalCmEach + maxSpacing));
+        let maxCount = Math.floor(usableLength / (totalCmEach + minSpacing));
+
+        // Chốt chọn số lần in tự động là trung bình giữa min & max
+        let autoCount = Math.floor((minCount + maxCount) / 2);
+        if (autoCount < 1) autoCount = 1;
+
+        // Cập nhật input số lần in trên dây
+        // printsPerCableInput.value = autoCount;
+        // Tính khoảng cách giữa các lần in
+        const spacing =
+          ((usableLength - autoCount * totalCmEach) / (autoCount - 1 || 1)) *
+          100; // cm
+
+        // Cập nhật gợi ý & khoảng cách
+        // document.getElementById(
+        //   "cableSuggest"
+        // ).innerText = `${minCount} – ${maxCount} lần in`;
+        // chi tiết
+        // Gợi ý khoảng cách cho 4–6 lần in
+        // let min = minCount > 1 ? minCount - 1 : minCount;
+        let max = maxCount > 0 ? maxCount + 1 : maxCount;
+        const spacingOptions = Array.from(
+          { length: max - minCount + 1 },
+          (_, i) => i + minCount
+        )
+          .map((count) => {
+            const space =
+              ((usableLength - count * totalCmEach) / (count - 1 || 1)) * 100;
+            // Khoảng cách min 20cm, max 40cm
+            if (space < 15 || space > 35) return null;
+            return `<div class="spacing-suggestion" data-count="${count}" title="Bấm để chọn"
+  style="
+    cursor: pointer;
+    padding: 6px 10px;
+    border: 1px dashed #999;
+    border-radius: 8px;
+    background: #fff;
+    white-space: nowrap;
+    font-size: 13px;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
+    transition: 0.2s ease-in-out;
+  ">
+  📍 <b>${count}</b> lần ~ <b>${space.toFixed(1)}cm</b>
+</div>`;
+          })
+          .filter(Boolean)
+          .join("<br>");
+
+        document.getElementById("spacingOptions").innerHTML =
+          "<u>📌 Gợi ý khoảng cách nếu in:</u><br>" + spacingOptions;
+        document.querySelectorAll(".spacing-suggestion").forEach((el) =>
+          el.addEventListener("click", () => {
+            const count = parseInt(el.dataset.count);
+            printsPerCableInput.value = count;
+            measure();
+          })
+        );
+        // end
         output.innerHTML =
           `🖋 Font: ${
             usingUploaded ? "Font tải lên" : selectedFont || "Arial"
@@ -426,7 +536,8 @@
           🔁 Tổng in: ${printsPerCable} x ${numberOfCables} = <b>${
           printsPerCable * numberOfCables
         }</b><br>
-          🧾 <b style="color: green;">Tổng tiền  (= Số lần in / dây x số dây cần in + chi phí cố định):\r ${total.toLocaleString()}đ</b>
+          🧾 <b style="color: red;">Tổng tiền :\r ${total.toLocaleString()}đ</b>
+          <div style="font-size:12px;font-weight:normal;font-style:italic;color:#6b6b6b">(= Số lần in / dây x số dây cần in + chi phí cố định)</div>
         `;
       }
 

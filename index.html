@@ -29,7 +29,7 @@
         border-radius: 6px;
       }
       select {
-        height: 120px;
+        height: 80px;
       }
       canvas {
         margin-top: 15px;
@@ -446,12 +446,12 @@
         const cableLength = parseFloat(
           document.getElementById("cableLength").value
         ); // mét
-        // Khoảng cách cố định mỗi đầu 20cm x 2  = 0.4m
-        const reservedEnds = 0.4;
+        // Chỉ cố định 1 đầu 20cm = 0.2m
+        const reservedEnds = 0.2;
         const usableLength = cableLength - reservedEnds;
 
         const minSpacing = 20 / 100; // mét
-        const maxSpacing = 30 / 100;
+        const maxSpacing = 60 / 100;
         const totalCmEach = totalCm / 100; // mét cho 1 lần in (gồm chữ + logo)
 
         let minCount = Math.floor(usableLength / (totalCmEach + maxSpacing));
@@ -462,19 +462,10 @@
         if (autoCount < 1) autoCount = 1;
 
         // Cập nhật input số lần in trên dây
-        // printsPerCableInput.value = autoCount;
         // Tính khoảng cách giữa các lần in
         const spacing =
           ((usableLength - autoCount * totalCmEach) / (autoCount - 1 || 1)) *
           100; // cm
-
-        // Cập nhật gợi ý & khoảng cách
-        // document.getElementById(
-        //   "cableSuggest"
-        // ).innerText = `${minCount} – ${maxCount} lần in`;
-        // chi tiết
-        // Gợi ý khoảng cách cho 4–6 lần in
-        // let min = minCount > 1 ? minCount - 1 : minCount;
         let max = maxCount > 0 ? maxCount + 1 : maxCount;
         const spacingOptions = Array.from(
           { length: max - minCount + 1 },
@@ -484,7 +475,7 @@
             const space =
               ((usableLength - count * totalCmEach) / (count - 1 || 1)) * 100;
             // Khoảng cách min 20cm, max 40cm
-            if (space < 15 || space > 35) return null;
+            if (space < 15 || space > 65) return null;
             return `<div class="spacing-suggestion" data-count="${count}" title="Bấm để chọn"
   style="
     cursor: pointer;
@@ -504,7 +495,7 @@
           .join("<br>");
 
         document.getElementById("spacingOptions").innerHTML =
-          "<u>📌 Gợi ý khoảng cách nếu in:</u><br>" + spacingOptions;
+          "<div>📌 Gợi ý khoảng cách nếu in:</div><br>" + spacingOptions;
         document.querySelectorAll(".spacing-suggestion").forEach((el) =>
           el.addEventListener("click", () => {
             const count = parseInt(el.dataset.count);
@@ -513,10 +504,10 @@
           })
         );
         // end
+        // `🖋 Font: ${
+        // usingUploaded ? "Font tải lên" : selectedFont || "Arial"
+        //}<br>` +
         output.innerHTML =
-          `🖋 Font: ${
-            usingUploaded ? "Font tải lên" : selectedFont || "Arial"
-          }<br>` +
           `📏 Chữ: ${widthCm.toFixed(2)} cm` +
           (logoWidthCm > 0 ? `<br>🖼️ Logo: ${logoWidthCm.toFixed(2)} cm` : "") +
           `<br><b style="font-size:16px;color:#d91e18;">`;
@@ -532,8 +523,8 @@
         const total = printsPerCable * numberOfCables * price + priceFix;
 
         priceOutput.innerHTML = `
-          💸 Giá in: ${price.toLocaleString()}đ<br>
-          🔁 Tổng in: ${printsPerCable} x ${numberOfCables} = <b>${
+          💸 Giá in: ${price.toLocaleString()}đ  
+      ${"   "} 🔁 Tổng in: ${printsPerCable} x ${numberOfCables} = <b>${
           printsPerCable * numberOfCables
         }</b><br>
           🧾 <b style="color: red;">Tổng tiền :\r ${total.toLocaleString()}đ</b>

@@ -29,7 +29,7 @@
         border-radius: 6px;
       }
       select {
-        height: 80px;
+        height: 60px;
       }
       canvas {
         margin-top: 15px;
@@ -223,7 +223,6 @@
           const json = await res.json();
           const systemFonts = [
             "Arial",
-            "Arial Black",
             "Times New Roman",
             "Helvetica",
             "Tahoma",
@@ -455,8 +454,8 @@
         const cableLength = parseFloat(
           document.getElementById("cableLength").value
         ); // mét
-        // Chỉ cố định 1 đầu 20cm = 0.2m
-        const reservedEnds = 0.2 + 0.2; //Cách đuôi 20cm
+        // Chỉ cố định 1 đầu 20cm = 0.2m, + 20cm cách đuôi (Điểm cuối)
+        const reservedEnds = 0.2 + 0.2;
         const usableLength = cableLength - reservedEnds;
 
         const minSpacing = 20 / 100; // mét
@@ -470,7 +469,6 @@
         let autoCount = Math.floor((minCount + maxCount) / 2);
         if (autoCount < 1) autoCount = 1;
 
-        // Cập nhật input số lần in trên dây
         // Tính khoảng cách giữa các lần in
         const spacing =
           ((usableLength - autoCount * totalCmEach) / (autoCount - 1 || 1)) *
@@ -486,7 +484,7 @@
             const space =
               ((usableLength - count * totalCmEach) / (count - 1 || 1)) * 100;
             // Khoảng cách min 20cm, max 40cm
-            if (space < 15 || space > 70) return null;
+            if (space < 20 || space > 70) return null;
             return `<div class="spacing-suggestion" data-count="${count}" title="Bấm để chọn"
         style="
           cursor: pointer;

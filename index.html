@@ -390,7 +390,7 @@
         ctx.fillStyle = "#4a90e2";
         ctx.font = `normal 14px sans-serif`;
         ctx.fillText(
-          `${widthCm.toFixed(2)} cm`,
+          `${widthCm.toFixed(1)} cm`,
           textX + textWidth / 2 - 30,
           textBottom + 15
         );
@@ -418,7 +418,7 @@
 
           ctx.fillStyle = "#d35400";
           ctx.fillText(
-            `${logoWidthCm.toFixed(2)} cm`,
+            `${logoWidthCm.toFixed(1)} cm`,
             logoStartX + logoWidthPx / 2 - 30,
             textBottom + 15
           );
@@ -429,7 +429,12 @@
         ctx.fillStyle = "#c0392b";
         ctx.font = `bold 16px sans-serif`;
         ctx.fillText(
-          `📐 Tổng: ${totalCm.toFixed(2)} cm`,
+          `📐 Tổng: ${totalCm.toFixed(1)} cm 📏 Chữ: ${widthCm.toFixed(1)} cm
+                 ${
+                   logoWidthCm > 0
+                     ? `🖼️ Logo: ${logoWidthCm.toFixed(1)} cm`
+                     : ""
+                 }`,
           textX,
           textBottom + 40
         );
@@ -448,7 +453,7 @@
           document.getElementById("cableLength").value
         ); // mét
         // Chỉ cố định 1 đầu 20cm = 0.2m
-        const reservedEnds = 0.2;
+        const reservedEnds = 0.2 + 0.2; //Cách đuôi 20cm
         const usableLength = cableLength - reservedEnds;
 
         const minSpacing = 20 / 100; // mét
@@ -479,25 +484,25 @@
             // Khoảng cách min 20cm, max 40cm
             if (space < 15 || space > 65) return null;
             return `<div class="spacing-suggestion" data-count="${count}" title="Bấm để chọn"
-  style="
-    cursor: pointer;
-    padding: 6px 10px;
-    border: 1px dashed #999;
-    border-radius: 8px;
-    background: #fff;
-    white-space: nowrap;
-    font-size: 13px;
-    box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
-    transition: 0.2s ease-in-out;
-  ">
-  📍 <b>${count}</b> lần ~ <b>${space.toFixed(1)}cm</b>
-</div>`;
+        style="
+          cursor: pointer;
+          padding: 6px 10px;
+          border: 1px dashed #999;
+          border-radius: 8px;
+          background: #fff;
+          white-space: nowrap;
+          font-size: 13px;
+          box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
+          transition: 0.2s ease-in-out;
+        ">
+        📍 <b>${count}</b> lần ~ <b>${space.toFixed(1)}cm</b>
+      </div>`;
           })
           .filter(Boolean)
           .join("<br>");
 
         document.getElementById("spacingOptions").innerHTML =
-          "<div>📌 Gợi ý khoảng cách nếu in:</div><br>" + spacingOptions;
+          "<div>📌 Gợi ý khoảng cách in:</div><br>" + spacingOptions;
         document.querySelectorAll(".spacing-suggestion").forEach((el) =>
           el.addEventListener("click", () => {
             const count = parseInt(el.dataset.count);
@@ -509,10 +514,11 @@
         // `🖋 Font: ${
         // usingUploaded ? "Font tải lên" : selectedFont || "Arial"
         //}<br>` +
-        output.innerHTML =
-          `📏 Chữ: ${widthCm.toFixed(2)} cm` +
-          (logoWidthCm > 0 ? `<br>🖼️ Logo: ${logoWidthCm.toFixed(2)} cm` : "") +
-          `<br><b style="font-size:16px;color:#d91e18;">`;
+        // output.innerHTML =
+        //   `📏 Chữ: ${widthCm.toFixed(1)} cm` +
+        //   (logoWidthCm > 0 ? `<br>🖼️ Logo: ${logoWidthCm.toFixed(1)} cm` : "") +
+        //   `<br><b style="font-size:16px;color:#d91e18;">`;
+        output.innerHTML = ``;
 
         updatePrintCost(totalCm);
       }
@@ -525,13 +531,13 @@
         const total = printsPerCable * numberOfCables * price + priceFix;
 
         priceOutput.innerHTML = `
-          💸 Giá in: ${price.toLocaleString()}đ  
-      ${"   "} 🔁 Tổng in: ${printsPerCable} x ${numberOfCables} = <b>${
+                💸 Giá in: ${price.toLocaleString()}đ
+            <br/>🔁 Tổng in: ${printsPerCable} x ${numberOfCables} = <b>${
           printsPerCable * numberOfCables
         }</b><br>
-          🧾 <b style="color: red;">Tổng tiền :\r ${total.toLocaleString()}đ</b>
-          <div style="font-size:12px;font-weight:normal;font-style:italic;color:#6b6b6b">(= Số lần in / dây x số dây cần in + chi phí cố định)</div>
-        `;
+                🧾 <b style="color: red;">Tổng tiền :\r ${total.toLocaleString()}đ</b>
+                <div style="font-size:12px;font-weight:normal;font-style:italic;color:#6b6b6b">(= Giá in * Số lần in / dây * số dây cần in + chi phí cố định)</div>
+              `;
       }
 
       function resizeLogo() {

@@ -190,7 +190,7 @@
       </div>
       <div style="flex: 1">
         <label>Chi phí cố định</label>
-        <input value="200000" />
+        <input value="200000" id="fixedCost" />
       </div>
     </div>
 
@@ -198,12 +198,13 @@
 
     <script>
       const API_KEY = "AIzaSyArOSMGtMYlBfaI9EcLd9WvT21zYTAaYfU";
-      const allFonts = [];
-      let uploadedFontName = "";
-      let logoWidthCm = 0;
       const pxPerInch = 96;
       const cmPerInch = 2.54;
       const pxPerCm = pxPerInch / cmPerInch;
+
+      const allFonts = [];
+      let uploadedFontName = "";
+      let logoWidthCm = 0;
 
       const fontList = document.getElementById("fontList");
       const output = document.getElementById("output");
@@ -213,6 +214,20 @@
       const printsPerCableInput = document.getElementById("printsPerCable");
       const numberOfCablesInput = document.getElementById("numberOfCables");
       const priceOutput = document.getElementById("priceOutput");
+      const canvas = document.getElementById("canvas");
+      const spacingOptions = document.getElementById("spacingOptions");
+      const logoPreview = document.getElementById("logoPreview");
+      const fontFile = document.getElementById("fontFile");
+      const clearFont = document.getElementById("clearFont");
+      const cableLengthInput = document.getElementById("cableLength");
+      const logoFile = document.getElementById("logoFile");
+      const clearLogo = document.getElementById("clearLogo");
+      const fixedCostInput = document.getElementById("fixedCost");
+
+      window.onload = () => {
+        fetchFonts();
+        measure();
+      };
 
       async function fetchFonts() {
         try {
@@ -234,7 +249,6 @@
             "Segoe UI",
           ];
           allFonts.push(...systemFonts, ...json.items.map((f) => f.family));
-          // output.innerText = `✅ Đã tải ${allFonts.length} fonts`;
           filterFonts();
         } catch (err) {
           output.innerText = `❌ Lỗi tải font: ${err.message}`;
@@ -244,315 +258,14 @@
       function filterFonts() {
         const query = fontSearch.value.toLowerCase();
         fontList.innerHTML = "";
-        const found = allFonts
+        allFonts
           .filter((f) => f.toLowerCase().includes(query))
-          .slice(0, 50);
-        found.forEach((font) => {
-          const opt = document.createElement("option");
-          opt.textContent = font;
-          fontList.appendChild(opt);
-        });
-      }
-
-      fontList.addEventListener("change", () => {
-        fontSearch.value = fontList.value;
-        measure();
-      });
-      fontSearch.addEventListener("input", filterFonts);
-      textInput.addEventListener("input", measure);
-      heightInput.addEventListener("input", () => {
-        measure();
-        resizeLogo();
-      });
-      printsPerCableInput.addEventListener("input", measure);
-      numberOfCablesInput.addEventListener("input", measure);
-
-      document
-        .getElementById("fontFile")
-        .addEventListener("change", function (e) {
-          const file = e.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = function () {
-            const fontData = reader.result;
-            const font = new FontFace("UploadedFont", fontData);
-            font
-              .load()
-              .then(function (loadedFace) {
-                document.fonts.add(loadedFace);
-                uploadedFontName = "UploadedFont";
-                output.innerText = `✅ Font "${file.name}" đã tải lên.`;
-                measure();
-              })
-              .catch(function (err) {
-                output.innerText = `❌ Lỗi tải font: ${err}`;
-              });
-          };
-          reader.readAsArrayBuffer(file);
-        });
-
-      document.getElementById("clearFont").addEventListener("click", () => {
-        uploadedFontName = "";
-        document.getElementById("fontFile").value = "";
-        output.innerText = "🧹 Đã xóa font upload.";
-        measure();
-      });
-      document
-        .getElementById("cableLength")
-        .addEventListener("change", measure);
-
-      document
-        .getElementById("logoFile")
-        .addEventListener("change", function (e) {
-          const file = e.target.files[0];
-          if (!file) return;
-
-          const reader = new FileReader();
-          reader.onload = function () {
-            const img = new Image();
-            img.onload = function () {
-              const cm = parseFloat(heightInput.value) || 2;
-              const targetHeightPx = cm * pxPerCm;
-              const ratio = img.width / img.height;
-              const targetWidthPx = targetHeightPx * ratio;
-              logoWidthCm = targetWidthPx / pxPerCm;
-
-              img.style.height = `${targetHeightPx}px`;
-              img.style.width = `${targetWidthPx}px`;
-              img.style.objectFit = "contain";
-
-              const preview = document.getElementById("logoPreview");
-              preview.innerHTML = "";
-              preview.appendChild(img);
-
-              measure();
-            };
-            img.src = reader.result;
-          };
-          reader.readAsDataURL(file);
-        });
-
-      document.getElementById("clearLogo").addEventListener("click", () => {
-        document.getElementById("logoFile").value = "";
-        document.getElementById("logoPreview").innerHTML = "";
-        logoWidthCm = 0;
-        measure();
-      });
-
-      function measure() {
-        const text = textInput.value.trim();
-        const cm = parseFloat(heightInput.value);
-        const selectedFont = fontList.value;
-        const usingUploaded = !!uploadedFontName;
-        const font = usingUploaded ? uploadedFontName : selectedFont || "Arial";
-
-        if (!text || !cm || cm <= 0) {
-          output.innerText = "❗ Vui lòng nhập chữ và chiều cao hợp lệ.";
-          clearCanvas();
-          return;
-        }
-
-        if (!usingUploaded && selectedFont) {
-          loadGoogleFont(selectedFont);
-        }
-
-        const pt = cm * 28.3464567;
-        const canvas = document.getElementById("canvas");
-        const ctx = canvas.getContext("2d");
-        const pxFontHeight = cm * pxPerCm;
-
-        const scale = 0.7;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-
-        ctx.scale(scale, scale);
-        ctx.textBaseline = "alphabetic";
-        ctx.font = `${pt}pt '${font}'`;
-        ctx.fillStyle = "#000";
-
-        const textX = 10;
-        const textY = pxFontHeight;
-        //
-
-        ctx.fillText(text, textX, textY);
-
-        const textMetrics = ctx.measureText(text);
-        const textWidth = textMetrics.width;
-        const widthCm = textWidth / pxPerCm;
-        const textHeight = pxFontHeight;
-        const textBottom = textY + 5;
-
-        ctx.strokeStyle = "#4a90e2";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(textX, textY - textHeight, textWidth, textHeight);
-        ctx.beginPath();
-        ctx.moveTo(textX, textBottom);
-        ctx.lineTo(textX + textWidth, textBottom);
-        ctx.stroke();
-        ctx.fillStyle = "#4a90e2";
-        ctx.font = `normal 14px sans-serif`;
-        ctx.fillText(
-          `${widthCm.toFixed(1)} cm`,
-          textX + textWidth / 2 - 30,
-          textBottom + 15
-        );
-
-        let totalCm = widthCm;
-
-        if (logoWidthCm > 0) {
-          const logoStartX = textX + textWidth + 10;
-          const logoWidthPx = logoWidthCm * pxPerCm;
-          const logoHeight = pxFontHeight;
-
-          ctx.strokeStyle = "#d35400";
-          ctx.lineWidth = 1;
-          ctx.strokeRect(
-            logoStartX,
-            textY - logoHeight,
-            logoWidthPx,
-            logoHeight
-          );
-
-          ctx.beginPath();
-          ctx.moveTo(logoStartX, textBottom);
-          ctx.lineTo(logoStartX + logoWidthPx, textBottom);
-          ctx.stroke();
-
-          ctx.fillStyle = "#d35400";
-          ctx.fillText(
-            `${logoWidthCm.toFixed(1)} cm`,
-            logoStartX + logoWidthPx / 2 - 30,
-            textBottom + 15
-          );
-
-          totalCm += logoWidthCm;
-        }
-
-        ctx.fillStyle = "#c0392b";
-        ctx.font = `bold 16px sans-serif`;
-        ctx.fillText(
-          `📐 Tổng: ${totalCm.toFixed(1)} cm 📏 Chữ: ${widthCm.toFixed(1)} cm
-                 ${
-                   logoWidthCm > 0
-                     ? `🖼️ Logo: ${logoWidthCm.toFixed(1)} cm`
-                     : ""
-                 }`,
-          textX,
-          textBottom + 40
-        );
-        ctx.restore();
-
-        // output.innerHTML =
-        //   `🖋 Font: ${
-        //     usingUploaded ? "Font tải lên" : selectedFont || "Arial"
-        //   }<br>` +
-        //   `📏 Chữ: ${widthCm.toFixed(2)} cm` +
-        //   (logoWidthCm > 0 ? `<br>🖼️ Logo: ${logoWidthCm.toFixed(2)} cm` : "") +
-        //   `<br><b style="font-size:16px;color:#d91e18;">📐 Tổng: ${totalCm.toFixed(
-        //     2
-        //   )} cm</b>`;
-        const cableLength = parseFloat(
-          document.getElementById("cableLength").value
-        ); // mét
-        // Chỉ cố định 1 đầu 20cm = 0.2m, + 20cm cách đuôi (Điểm cuối)
-        const reservedEnds = 0.2 + 0.2;
-        const usableLength = cableLength - reservedEnds;
-
-        const minSpacing = 20 / 100; // mét
-        const maxSpacing = 60 / 100;
-        const totalCmEach = totalCm / 100; // mét cho 1 lần in (gồm chữ + logo)
-
-        let minCount = Math.floor(usableLength / (totalCmEach + maxSpacing));
-        let maxCount = Math.floor(usableLength / (totalCmEach + minSpacing));
-
-        // Chốt chọn số lần in tự động là trung bình giữa min & max
-        let autoCount = Math.floor((minCount + maxCount) / 2);
-        if (autoCount < 1) autoCount = 1;
-
-        // Tính khoảng cách giữa các lần in
-        const spacing =
-          ((usableLength - autoCount * totalCmEach) / (autoCount - 1 || 1)) *
-          100; // cm
-        let min = minCount > 0 ? minCount - 1 : minCount;
-        let max = maxCount > 0 ? maxCount + 1 : maxCount;
-        console.log("min", min, max);
-        const spacingOptions = Array.from(
-          { length: max - min + 1 },
-          (_, i) => i + min
-        )
-          .map((count) => {
-            const space =
-              ((usableLength - count * totalCmEach) / (count - 1 || 1)) * 100;
-            // Khoảng cách min 20cm, max 40cm
-            if (space < 20 || space > 70) return null;
-            return `<div class="spacing-suggestion" data-count="${count}" title="Bấm để chọn"
-        style="
-          cursor: pointer;
-          padding: 6px 10px;
-          border: 1px dashed #999;
-          border-radius: 8px;
-          background: #fff;
-          white-space: nowrap;
-          font-size: 13px;
-          box-shadow: 1px 1px 3px rgba(0,0,0,0.05);
-          transition: 0.2s ease-in-out;
-        ">
-        📍 <b>${count}</b> lần ~ <b>${space.toFixed(1)}cm</b>
-      </div>`;
-          })
-          .filter(Boolean)
-          .join("<br>");
-
-        document.getElementById("spacingOptions").innerHTML =
-          "<div>📌 Gợi ý khoảng cách in:</div><br>" + spacingOptions;
-        document.querySelectorAll(".spacing-suggestion").forEach((el) =>
-          el.addEventListener("click", () => {
-            const count = parseInt(el.dataset.count);
-            printsPerCableInput.value = count;
-            measure();
-          })
-        );
-        // end
-        // `🖋 Font: ${
-        // usingUploaded ? "Font tải lên" : selectedFont || "Arial"
-        //}<br>` +
-        // output.innerHTML =
-        //   `📏 Chữ: ${widthCm.toFixed(1)} cm` +
-        //   (logoWidthCm > 0 ? `<br>🖼️ Logo: ${logoWidthCm.toFixed(1)} cm` : "") +
-        //   `<br><b style="font-size:16px;color:#d91e18;">`;
-        output.innerHTML = ``;
-
-        updatePrintCost(totalCm);
-      }
-
-      function updatePrintCost(totalCm) {
-        const priceFix = 200000;
-        const printsPerCable = parseInt(printsPerCableInput.value) || 0;
-        const numberOfCables = parseInt(numberOfCablesInput.value) || 0;
-        const price = totalCm > 30 ? 10000 : 5000;
-        const total = printsPerCable * numberOfCables * price + priceFix;
-
-        priceOutput.innerHTML = `
-                💸 Giá in: ${price.toLocaleString()}đ
-            <br/>🔁 Tổng in: ${printsPerCable} x ${numberOfCables} = <b>${
-          printsPerCable * numberOfCables
-        }</b><br>
-                🧾 <b style="color: red;">Tổng tiền :\r ${total.toLocaleString()}đ</b>
-                <div style="font-size:12px;font-weight:normal;font-style:italic;color:#6b6b6b">(= Giá in * Số lần in / dây * số dây cần in + chi phí cố định)</div>
-              `;
-      }
-
-      function resizeLogo() {
-        const logo = document.querySelector("#logoPreview img");
-        if (!logo) return;
-        const cm = parseFloat(heightInput.value) || 2;
-        const targetHeightPx = cm * pxPerCm;
-        const ratio = logo.naturalWidth / logo.naturalHeight;
-        const targetWidthPx = targetHeightPx * ratio;
-        logo.style.height = `${targetHeightPx}px`;
-        logo.style.width = `${targetWidthPx}px`;
-        logoWidthCm = targetWidthPx / pxPerCm;
-        measure();
+          .slice(0, 50)
+          .forEach((font) => {
+            const opt = document.createElement("option");
+            opt.textContent = font;
+            fontList.appendChild(opt);
+          });
       }
 
       function loadGoogleFont(font) {
@@ -565,20 +278,282 @@
           const link = document.createElement("link");
           link.href = `https://fonts.googleapis.com/css2?family=${fontName}&display=swap`;
           link.rel = "stylesheet";
+          console.log("🚀 ~ loadGoogleFont ~ link:", link);
           document.head.appendChild(link);
         }
       }
 
       function clearCanvas() {
-        const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
 
-      window.onload = function () {
-        fetchFonts();
+      function resizeLogo() {
+        const logo = logoPreview.querySelector("img");
+        if (!logo) return;
+        const cm = parseFloat(heightInput.value) || 2;
+        const targetHeightPx = cm * pxPerCm;
+        const ratio = logo.naturalWidth / logo.naturalHeight;
+        const targetWidthPx = targetHeightPx * ratio;
+        logo.style.height = `${targetHeightPx}px`;
+        logo.style.width = `${targetWidthPx}px`;
+        logoWidthCm = targetWidthPx / pxPerCm;
         measure();
-      };
+      }
+
+      function updatePrintCost(totalCm) {
+        const priceFix = parseInt(fixedCostInput.value) || 0;
+        const printsPerCable = parseInt(printsPerCableInput.value) || 0;
+        const numberOfCables = parseInt(numberOfCablesInput.value) || 0;
+        const price = totalCm > 30 ? 10000 : 5000;
+        const total = printsPerCable * numberOfCables * price + priceFix;
+
+        priceOutput.innerHTML = `💸 Giá in: ${price.toLocaleString()}đ<br/>🔁 Tổng in: ${printsPerCable} x ${numberOfCables} = <b>${
+          printsPerCable * numberOfCables
+        }</b><br>🧾 <b style="color: red;">Tổng tiền :\r ${total.toLocaleString()}đ</b><div style="font-size:12px;font-weight:normal;font-style:italic;color:#6b6b6b">(= Giá in * Số lần in / dây * số dây cần in + chi phí cố định)</div>`;
+      }
+
+      function measure() {
+        const text = textInput.value.trim();
+        const cm = parseFloat(heightInput.value);
+        const selectedFont = fontList.value;
+        const usingUploaded = !!uploadedFontName;
+        const font = usingUploaded ? uploadedFontName : selectedFont || "Arial";
+
+        if (!isValidInput(text, cm)) return;
+
+        if (!usingUploaded && selectedFont) {
+          loadGoogleFont(selectedFont);
+        }
+
+        const ctx = canvas.getContext("2d");
+        const scale = 0.7;
+        const pt = cm * 28.3464567;
+        const pxFontHeight = cm * pxPerCm;
+
+        clearCanvas(ctx);
+        setupContext(ctx, pt, font, scale);
+
+        const textX = 10;
+        const textY = pxFontHeight;
+        const textWidth = drawText(ctx, text, textX, textY, pxFontHeight);
+
+        let totalCm = textWidth / pxPerCm;
+        drawDimensionBox(ctx, textX, textY, textWidth, pxFontHeight, "#4a90e2");
+
+        if (logoWidthCm > 0) {
+          const logoCm = drawLogoBox(
+            ctx,
+            textX + textWidth + 10,
+            textY,
+            pxFontHeight
+          );
+          totalCm += logoCm;
+        }
+
+        drawSummary(ctx, textX, textY, totalCm, textWidth / pxPerCm);
+
+        generateSpacingSuggestions(totalCm);
+        updatePrintCost(totalCm);
+        output.innerHTML = "";
+      }
+      // tách
+      function isValidInput(text, cm) {
+        if (!text || !cm || cm <= 0) {
+          output.innerText = "❗ Vui lòng nhập chữ và chiều cao hợp lệ.";
+          clearCanvas();
+          return false;
+        }
+        return true;
+      }
+
+      function clearCanvas(ctx = canvas.getContext("2d")) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      function setupContext(ctx, pt, font, scale) {
+        ctx.save();
+        ctx.scale(scale, scale);
+        ctx.textBaseline = "alphabetic";
+        ctx.font = `${pt}pt '${font}'`;
+        ctx.fillStyle = "#000";
+      }
+
+      function drawText(ctx, text, x, y, height) {
+        ctx.fillText(text, x, y);
+        const width = ctx.measureText(text).width;
+        return width;
+      }
+
+      function drawDimensionBox(ctx, x, y, width, height, color) {
+        const bottom = y + 5;
+        const widthCm = width / pxPerCm;
+
+        ctx.strokeStyle = color;
+        ctx.strokeRect(x, y - height, width, height);
+        ctx.beginPath();
+        ctx.moveTo(x, bottom);
+        ctx.lineTo(x + width, bottom);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.font = `normal 14px sans-serif`;
+        ctx.fillText(
+          `${widthCm.toFixed(1)} cm`,
+          x + width / 2 - 30,
+          bottom + 15
+        );
+      }
+
+      function drawLogoBox(ctx, x, y, height) {
+        const logoWidthPx = logoWidthCm * pxPerCm;
+        const color = "#d35400";
+        const bottom = y + 5;
+
+        ctx.strokeStyle = color;
+        ctx.strokeRect(x, y - height, logoWidthPx, height);
+        ctx.beginPath();
+        ctx.moveTo(x, bottom);
+        ctx.lineTo(x + logoWidthPx, bottom);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.fillText(
+          `${logoWidthCm.toFixed(1)} cm`,
+          x + logoWidthPx / 2 - 30,
+          bottom + 15
+        );
+
+        return logoWidthCm;
+      }
+
+      function drawSummary(ctx, x, y, totalCm, textCm) {
+        const bottom = y + 5;
+        ctx.fillStyle = "#c0392b";
+        ctx.font = `bold 16px sans-serif`;
+        ctx.fillText(
+          `📐 Tổng: ${totalCm.toFixed(1)} cm 📏 Chữ: ${textCm.toFixed(1)} cm${
+            logoWidthCm > 0 ? ` 🖼️ Logo: ${logoWidthCm.toFixed(1)} cm` : ""
+          }`,
+          x,
+          bottom + 40
+        );
+        ctx.restore();
+      }
+
+      function generateSpacingSuggestions(totalCm) {
+        const cableLength = parseFloat(cableLengthInput.value);
+        const reservedEnds = 0.4; // 2 đầu 20cm
+        const usableLength = cableLength - reservedEnds;
+        const totalCmEach = totalCm / 100;
+
+        const minSpacing = 0.2,
+          maxSpacing = 0.6;
+        let minCount = Math.floor(usableLength / (totalCmEach + maxSpacing));
+        let maxCount = Math.floor(usableLength / (totalCmEach + minSpacing));
+        let autoCount = Math.floor((minCount + maxCount) / 2);
+        if (autoCount < 1) autoCount = 1;
+
+        let min = minCount > 0 ? minCount - 1 : minCount;
+        let max = maxCount > 0 ? maxCount + 1 : maxCount;
+
+        const options = Array.from({ length: max - min + 1 }, (_, i) => i + min)
+          .map((count) => {
+            const space =
+              ((usableLength - count * totalCmEach) / (count - 1 || 1)) * 100;
+            if (space < 20 || space > 70) return null;
+            return `<div class="spacing-suggestion" data-count="${count}" style="cursor:pointer;padding:6px 10px;border:1px dashed #999;border-radius:8px;background:#fff;white-space:nowrap;font-size:13px;box-shadow:1px 1px 3px rgba(0,0,0,0.05);transition:0.2s ease-in-out;">📍 <b>${count}</b> lần ~ <b>${space.toFixed(
+              1
+            )}cm</b></div>`;
+          })
+          .filter(Boolean)
+          .join("<br>");
+
+        spacingOptions.innerHTML =
+          "<div>📌 Gợi ý khoảng cách in:</div><br>" + options;
+
+        document.querySelectorAll(".spacing-suggestion").forEach((el) =>
+          el.addEventListener("click", () => {
+            const count = parseInt(el.dataset.count);
+            printsPerCableInput.value = count;
+            measure(); // gọi lại với giá trị mới
+          })
+        );
+      }
+      // end measure
+      fontList.addEventListener("change", () => {
+        fontSearch.value = fontList.value;
+        measure();
+      });
+
+      fontSearch.addEventListener("input", filterFonts);
+      textInput.addEventListener("input", measure);
+      heightInput.addEventListener("input", () => {
+        measure();
+        resizeLogo();
+      });
+      printsPerCableInput.addEventListener("input", measure);
+      numberOfCablesInput.addEventListener("input", measure);
+      cableLengthInput.addEventListener("change", measure);
+      fixedCostInput.addEventListener("input", measure);
+
+      fontFile.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const fontData = reader.result;
+          const font = new FontFace("UploadedFont", fontData);
+          font
+            .load()
+            .then((loadedFace) => {
+              document.fonts.add(loadedFace);
+              uploadedFontName = "UploadedFont";
+              output.innerText = `✅ Font "${file.name}" đã tải lên.`;
+              measure();
+            })
+            .catch((err) => {
+              output.innerText = `❌ Lỗi tải font: ${err}`;
+            });
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      clearFont.addEventListener("click", () => {
+        uploadedFontName = "";
+        fontFile.value = "";
+        output.innerText = "🧹 Đã xóa font upload.";
+        measure();
+      });
+
+      logoFile.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            const cm = parseFloat(heightInput.value) || 2;
+            const targetHeightPx = cm * pxPerCm;
+            const ratio = img.width / img.height;
+            const targetWidthPx = targetHeightPx * ratio;
+            logoWidthCm = targetWidthPx / pxPerCm;
+            img.style.height = `${targetHeightPx}px`;
+            img.style.width = `${targetWidthPx}px`;
+            img.style.objectFit = "contain";
+            logoPreview.innerHTML = "";
+            logoPreview.appendChild(img);
+            measure();
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      clearLogo.addEventListener("click", () => {
+        logoFile.value = "";
+        logoPreview.innerHTML = "";
+        logoWidthCm = 0;
+        measure();
+      });
     </script>
   </body>
 </html>
